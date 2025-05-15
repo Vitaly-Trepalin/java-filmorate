@@ -7,9 +7,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/users")
@@ -18,9 +16,9 @@ public class UserController {
     private Map<Long, User> users = new HashMap<>();
 
     @GetMapping
-    public Collection<User> findAll() {
+    public List<User> findAll() {
         log.info("Get all users");
-        return users.values();
+        return new ArrayList<>(users.values());
     }
 
     @PostMapping

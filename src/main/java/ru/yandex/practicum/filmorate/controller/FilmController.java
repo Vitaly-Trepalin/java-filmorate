@@ -7,9 +7,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/films")
@@ -18,9 +16,9 @@ public class FilmController {
     private Map<Long, Film> films = new HashMap<>();
 
     @GetMapping
-    public Collection<Film> findAll() {
+    public List<Film> findAll() {
         log.info("Get all films");
-        return films.values();
+        return new ArrayList<>(films.values());
     }
 
     @PostMapping
