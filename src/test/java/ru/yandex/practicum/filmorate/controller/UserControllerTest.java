@@ -6,10 +6,14 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,13 +23,17 @@ class UserControllerTest {
 
     @BeforeEach
     public void setUp() {
-        userController = new UserController();
+        UserStorage userStorage = new InMemoryUserStorage();
+        UserService userService = new UserService(userStorage);
+
+        userController = new UserController(userStorage, userService);
 
         User user1 = User.builder()
                 .name("Первый")
                 .email("one@ya.ru")
                 .login("user1")
                 .birthday(LocalDate.of(1988, 6, 18))
+                .friends(new HashSet<>())
                 .build();
 
         User user2 = User.builder()
@@ -33,6 +41,7 @@ class UserControllerTest {
                 .email("two@ya.ru")
                 .login("user2")
                 .birthday(LocalDate.of(1989, 9, 13))
+                .friends(new HashSet<>())
                 .build();
 
         userController.create(user1);
@@ -41,7 +50,10 @@ class UserControllerTest {
 
     @AfterEach
     public void shutDown() {
-        userController = new UserController();
+        UserStorage userStorage = new InMemoryUserStorage();
+        UserService userService = new UserService(userStorage);
+
+        userController = new UserController(userStorage, userService);
     }
 
     @Test
@@ -52,6 +64,7 @@ class UserControllerTest {
                 .email("one@ya.ru")
                 .login("user1")
                 .birthday(LocalDate.of(1988, 6, 18))
+                .friends(new HashSet<>())
                 .build();
 
         User user2 = User.builder()
@@ -60,6 +73,7 @@ class UserControllerTest {
                 .email("two@ya.ru")
                 .login("user2")
                 .birthday(LocalDate.of(1989, 9, 13))
+                .friends(new HashSet<>())
                 .build();
 
         Collection<User> expected = new ArrayList<>(List.of(user1, user2));
@@ -77,6 +91,7 @@ class UserControllerTest {
                 .email("three@ya.ru")
                 .login("user3")
                 .birthday(LocalDate.of(1988, 6, 22))
+                .friends(new HashSet<>())
                 .build();
 
         User user = User.builder()
@@ -84,6 +99,7 @@ class UserControllerTest {
                 .email("three@ya.ru")
                 .login("user3")
                 .birthday(LocalDate.of(1988, 6, 22))
+                .friends(new HashSet<>())
                 .build();
 
         userController.create(user);

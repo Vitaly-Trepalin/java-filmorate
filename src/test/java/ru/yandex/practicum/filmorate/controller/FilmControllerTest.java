@@ -6,11 +6,17 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +26,11 @@ class FilmControllerTest {
 
     @BeforeEach
     public void setUp() {
-        filmController = new FilmController();
+        FilmStorage filmStorage = new InMemoryFilmStorage();
+        UserStorage userStorage = new InMemoryUserStorage();
+        FilmService filmService = new FilmService(filmStorage, userStorage);
+
+        filmController = new FilmController(filmService, filmStorage);
 
         Film film1 = Film.builder()
                 .name("Первый фильм")
@@ -41,7 +51,11 @@ class FilmControllerTest {
 
     @AfterEach
     public void shutDown() {
-        filmController = new FilmController();
+        FilmStorage filmStorage = new InMemoryFilmStorage();
+        UserStorage userStorage = new InMemoryUserStorage();
+        FilmService filmService = new FilmService(filmStorage, userStorage);
+
+        filmController = new FilmController(filmService, filmStorage);
     }
 
     @Test
@@ -52,6 +66,7 @@ class FilmControllerTest {
                 .description("Описание первого фильма")
                 .releaseDate(LocalDate.of(1965, 12, 1))
                 .duration(3600L)
+                .likes(new HashSet<>())
                 .build();
 
         Film film2 = Film.builder()
@@ -60,6 +75,7 @@ class FilmControllerTest {
                 .description("Описание второго фильма")
                 .releaseDate(LocalDate.of(1980, 6, 23))
                 .duration(7200L)
+                .likes(new HashSet<>())
                 .build();
 
         Collection<Film> expected = new ArrayList<>(List.of(film1, film2));
@@ -77,6 +93,7 @@ class FilmControllerTest {
                 .description("Описание третьего фильма")
                 .releaseDate(LocalDate.of(1973, 11, 8))
                 .duration(1800L)
+                .likes(new HashSet<>())
                 .build();
 
         Film film = Film.builder()
@@ -84,6 +101,7 @@ class FilmControllerTest {
                 .description("Описание третьего фильма")
                 .releaseDate(LocalDate.of(1973, 11, 8))
                 .duration(1800L)
+                .likes(new HashSet<>())
                 .build();
 
         filmController.create(film);
@@ -111,8 +129,9 @@ class FilmControllerTest {
                 .description("Описание третьего фильма")
                 .releaseDate(LocalDate.of(1973, 11, 8))
                 .duration(-1800L)
+                .likes(new HashSet<>())
                 .build()));
-        assertTrue(exception.getMessage().equals("Продолжительность фильма не может быть отртцательной"));
+        assertTrue(exception.getMessage().equals("Продолжительность фильма не может быть отрицательной"));
     }
 
     @Test
