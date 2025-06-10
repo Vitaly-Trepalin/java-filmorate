@@ -14,9 +14,16 @@ SELECT *
 FROM users;
 
 -- получение N наиболее популярных фильмов (в данном случае 10)
-SELECT *
+SELECT f.film_id,
+f."name",
+f.description,
+f.release_date,
+f.duration,
+f.rating 
 FROM films f 
-ORDER BY rating DESC
+JOIN likes l ON f.film_id = l.film_id
+GROUP BY f.film_id
+ORDER BY COUNT(*) DESC
 LIMIT 10;
 
 -- получение общих друзей (в данном случае пользователей с id = 1 и id = 5)
