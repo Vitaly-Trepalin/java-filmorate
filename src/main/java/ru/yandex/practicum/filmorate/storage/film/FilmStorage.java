@@ -15,7 +15,4 @@ public interface FilmStorage {
     List<Film> findAll();
 
     Film findById(Long id);
-
-    Map<Long, Film> getFilms();
-
 }

@@ -1,92 +1,78 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+    private final JdbcTemplate jdbcTemplate;
+    private final UserRowMapper userRowMapper;
 
-    public List<User> mutualFriends(Long id, Long otherId) {
-        log.info("Method started (mutualFriends)");
-        Map<Long, User> users = userStorage.getUsers();
-        if (!users.containsKey(id)) {
-            log.warn("Mutual friends list not shown. No user with id={}", id);
-            throw new NotFoundException("Список общих друзей не показан. Нет пользователя с id=" + id);
-        }
-        if (!users.containsKey(otherId)) {
-            log.warn("Mutual friends list not shown. No user with id={}", otherId);
-            throw new NotFoundException("Список общих друзей не показан. Нет пользователя с id=" + otherId);
-        }
-        User user1 = users.get(id);
-        User user2 = users.get(otherId);
-        log.info("A list of mutual friends is shown");
-        return user1.getFriends().stream()
-                .filter(friends -> user2.getFriends().contains(friends))
-                .map(users::get)
-                .toList();
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, JdbcTemplate jdbcTemplate,
+                       UserRowMapper userRowMapper) {
+        this.userStorage = userStorage;
+        this.jdbcTemplate = jdbcTemplate;
+        this.userRowMapper = userRowMapper;
     }
 
     public void addFriend(Long userId, Long friendId) {
         log.info("Method started (addFriend)");
-        Map<Long, User> users = userStorage.getUsers();
-        if (!users.containsKey(userId)) {
-            log.warn("Friend not added. No user with id={}", userId);
-            throw new NotFoundException("Друг не добавлен. Нет пользователя с id=" + userId);
-        }
-        if (!users.containsKey(friendId)) {
-            log.warn("Friend not added. No user with id={}", friendId);
-            throw new NotFoundException("Друг не добавлен. Нет пользователя с id=" + friendId);
-        }
-        log.info("Friend added");
-        Set<Long> friends1 = users.get(userId).getFriends();
-        friends1.add(friendId);
+        String sqlQuery = "INSERT INTO friend_status VALUES (?, ?)";
 
-        Set<Long> friends2 = users.get(friendId).getFriends();
-        friends2.add(userId);
+        userStorage.findById(userId); // проверка на наличие пользователя с заданным id
+        userStorage.findById(friendId);
+
+        jdbcTemplate.update(sqlQuery, userId, friendId);
+        log.info("Friend added");
     }
 
     public void removeFriend(Long userId, Long friendId) {
         log.info("Method started (removeFriend)");
-        Map<Long, User> users = userStorage.getUsers();
-        if (!users.containsKey(userId)) {
-            log.warn("Friend not deleted. No user with id={}", userId);
-            throw new NotFoundException("Друг не удален. Нет пользователя с id=" + userId);
-        }
-        if (!users.containsKey(friendId)) {
-            log.warn("Friend not deleted. No user with id={}", friendId);
-            throw new NotFoundException("Друг не удален. Нет пользователя с id=" + friendId);
-        }
-        log.info("Friend deleted");
-        Set<Long> friends1 = users.get(userId).getFriends();
-        friends1.remove(friendId);
+        String sqlQuery = "DELETE FROM friend_status WHERE user_id = ? AND friend_id = ?";
 
-        Set<Long> friends2 = users.get(friendId).getFriends();
-        friends2.remove(userId);
+        userStorage.findById(userId);
+        userStorage.findById(friendId);
+
+        jdbcTemplate.update(sqlQuery, userId, friendId);
+        log.info("Friend remove");
     }
 
-    public List<User> getFriends(Long id) {
+    public List<User> getFriends(Long userId) {
         log.info("Method started (getFriends)");
-        Map<Long, User> users = userStorage.getUsers();
-        if (!users.containsKey(id)) {
-            log.warn("Friends list is not available. No user with id={}", id);
-            throw new NotFoundException("Список друзей недоступен. Нет пользователя с id=" + id);
-        }
-        List<Long> friends = new ArrayList<>(users.get(id).getFriends());
-        log.info("Friends list received");
-        return friends.stream()
-                .map(users::get)
-                .toList();
+        String sqlQuery = "SELECT *\n" +
+                "FROM \"user\"\n" +
+                "WHERE user_id IN (SELECT fs.FRIEND_ID \n" +
+                "FROM friend_status AS fs\n" +
+                "JOIN \"user\" AS u ON fs.USER_ID = u.USER_ID\n" +
+                "WHERE u.user_id = ?)";
+
+        userStorage.findById(userId);
+
+        return jdbcTemplate.query(sqlQuery, userRowMapper, userId);
+    }
+
+    public List<User> mutualFriends(Long firstId, Long secondId) {
+        log.info("Method started (mutualFriends)");
+        String sqlQuery = "SELECT *\n" +
+                "FROM \"user\"\n" +
+                "WHERE user_id IN (\n" +
+                "SELECT friend_id FROM friend_status WHERE user_id = ?\n" +
+                "INTERSECT \n" +
+                "SELECT friend_id FROM friend_status WHERE user_id = ?\n" +
+                ")";
+
+        userStorage.findById(firstId);
+        userStorage.findById(secondId);
+
+        return jdbcTemplate.query(sqlQuery, userRowMapper, firstId, secondId);
     }
 }
