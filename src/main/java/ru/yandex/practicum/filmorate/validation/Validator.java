@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.validation;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,14 +17,10 @@ import java.util.List;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class Validator {
     private final JdbcTemplate jdbcTemplate;
     private final GenreDbStorage genreDbStorage;
-
-    public Validator(JdbcTemplate jdbcTemplate, GenreDbStorage genreDbStorage) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.genreDbStorage = genreDbStorage;
-    }
 
     public void filmValidation(Film film) {
         log.info("Method started (filmValidation)");

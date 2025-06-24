@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.mappers.GenreRowMapper;
 import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 import ru.yandex.practicum.filmorate.validation.Validator;
@@ -23,7 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({UserDbStorage.class, Validator.class, UserRowMapper.class})
+@Import({UserDbStorage.class, Validator.class, UserRowMapper.class, GenreRowMapper.class, GenreDbStorage.class})
 class UserDbStorageTest {
     private final UserDbStorage userDbStorage;
     private final JdbcTemplate jdbcTemplate;
