@@ -136,4 +136,28 @@ public class Validator {
             throw new NotFoundException("Нет пользователя с id=" + userId);
         }
     }
+
+    public void checkForEmailInDatabase(String email) {
+        try {
+            String queryEmail = "SELECT email FROM \"user\" WHERE email = ?";
+            jdbcTemplate.queryForObject(queryEmail, String.class, email);
+
+            log.warn("This email = {} already exists. User not created.", email);
+            throw new ValidationException("Email = " + email + " уже существует. Пользователь не создан");
+        } catch (EmptyResultDataAccessException e) {
+            log.info("Email not found");
+        }
+    }
+
+    public void checkForLoginInDatabase(String login) {
+        try {
+            String queryLogin = "SELECT login FROM \"user\" WHERE login = ?";
+            jdbcTemplate.queryForObject(queryLogin, String.class, login);
+
+            log.warn("This login = {} already exists. User not created.", login);
+            throw new ValidationException("Login = " + login + " уже существует. Пользователь не создан");
+        } catch (EmptyResultDataAccessException e) {
+            log.info("Login not found");
+        }
+    }
 }

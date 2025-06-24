@@ -52,6 +52,8 @@ public class UserDbStorage implements UserStorage {
         String sqlQuery = "INSERT INTO \"user\" (name, email, login, birthday) VALUES(?, ?, ?, ?)";
 
         validator.userValidation(user);
+        validator.checkForEmailInDatabase(user.getEmail());
+        validator.checkForLoginInDatabase(user.getLogin());
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
