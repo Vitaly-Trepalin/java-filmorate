@@ -8,7 +8,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.validation.Validator;
@@ -18,7 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
 
-@Repository("UserDbStorage")
+@Repository
 @Slf4j
 @RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
@@ -52,25 +51,7 @@ public class UserDbStorage implements UserStorage {
         log.info("Method started (create)");
         String sqlQuery = "INSERT INTO \"user\" (name, email, login, birthday) VALUES(?, ?, ?, ?)";
 
-        validator.userValidation(user); // валидация полей email, login, birthday
-        try { // проверка уникальности email
-            String queryEmail = "SELECT email FROM \"user\" WHERE email = ?";
-            jdbcTemplate.queryForObject(queryEmail, String.class, user.getEmail());
-
-            log.warn("This email = {} already exists. User not created.", user.getEmail());
-            throw new ValidationException("Email = " + user.getEmail() + " уже существует. Пользователь не создан");
-        } catch (EmptyResultDataAccessException e) {
-            log.info("Email validation passed");
-        }
-        try { // проверка уникальности login
-            String queryLogin = "SELECT login FROM \"user\" WHERE login = ?";
-            jdbcTemplate.queryForObject(queryLogin, String.class, user.getLogin());
-
-            log.warn("This login = {} already exists. User not created.", user.getLogin());
-            throw new ValidationException("Login = " + user.getLogin() + " уже существует. Пользователь не создан");
-        } catch (EmptyResultDataAccessException e) {
-            log.info("Login validation passed");
-        }
+        validator.userValidation(user);
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -97,7 +78,7 @@ public class UserDbStorage implements UserStorage {
         log.info("Method started (update)");
         String sqlQuery = "UPDATE \"user\" SET name = ?, email = ?, login = ?, birthday = ? WHERE user_id = ?";
 
-        findById(user.getId()); // проверка на наличие пользователя с заданным id
+        validator.checkForUserInDatabase(user.getId());
         validator.userValidation(user);
 
         jdbcTemplate.update(sqlQuery,
@@ -115,7 +96,7 @@ public class UserDbStorage implements UserStorage {
         log.info("Method started (delete)");
         String sqlQuery = "DELETE FROM \"user\" WHERE user_id = ?";
 
-        findById(id); // проверка на наличие пользователя с заданным id
+        validator.checkForUserInDatabase(id);
 
         log.info("User with id={} delete", id);
         jdbcTemplate.update(sqlQuery, id);

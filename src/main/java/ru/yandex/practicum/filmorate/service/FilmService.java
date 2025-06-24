@@ -1,39 +1,33 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.mappers.FilmRowMapper;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.validation.Validator;
 
 import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FilmService {
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private final FilmStorage filmDbStorage;
+    private final UserStorage userDbStorage;
     private final JdbcTemplate jdbcTemplate;
     private final FilmRowMapper filmRowMapper;
-
-    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage,
-                       JdbcTemplate jdbcTemplate, FilmRowMapper filmRowMapper) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
-        this.jdbcTemplate = jdbcTemplate;
-        this.filmRowMapper = filmRowMapper;
-    }
+    private final Validator validator;
 
     public void addLike(Long filmId, Long userId) {
         log.info("Method started (addLike)");
         String sqlQuery = "INSERT INTO \"like\" VALUES (?, ?)";
 
-        filmStorage.findById(filmId); // проверка на наличия фильма с заданным id
-        userStorage.findById(userId); // проверка на наличия пользователя с заданным id
+        validator.checkForFilmInDatabase(filmId);
+        validator.checkForUserInDatabase(userId);
 
         jdbcTemplate.update(sqlQuery, filmId, userId);
         log.info("like added filmId={}", filmId);
@@ -43,8 +37,8 @@ public class FilmService {
         log.info("Method started (removeLike)");
         String sqlQuery = "DELETE FROM \"like\" WHERE film_id = ? AND user_id = ?";
 
-        filmStorage.findById(filmId); // проверка на наличия фильма с заданным id
-        userStorage.findById(userId); // проверка на наличия пользователя с заданным id
+        validator.checkForFilmInDatabase(filmId);
+        validator.checkForUserInDatabase(userId);
 
         jdbcTemplate.update(sqlQuery, filmId, userId);
         log.info("like remove filmId={}", filmId);

@@ -1,16 +1,26 @@
 package ru.yandex.practicum.filmorate.validation;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.GenreDbStorage;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class Validator {
+    private final JdbcTemplate jdbcTemplate;
+    private final GenreDbStorage genreDbStorage;
 
     public void filmValidation(Film film) {
         log.info("Method started (filmValidation)");
@@ -69,6 +79,61 @@ public class Validator {
         if (user.getBirthday().isAfter(LocalDate.now())) {
             log.warn("Date of birth cannot be in the future");
             throw new ValidationException("Дата рождения не может быть в будущем");
+        }
+    }
+
+    public boolean checkForFilmInDatabase(String name) {
+        log.info("Method started (checkIfFilmIsInDatabase)");
+        String sqlQuery = "SELECT name FROM film WHERE name = ?";
+
+        try {
+            jdbcTemplate.queryForObject(sqlQuery, String.class, name);
+            return true;
+        } catch (EmptyResultDataAccessException e) {
+            log.info("No film with name={}", name);
+            return false;
+        }
+    }
+
+    public boolean checkForFilmInDatabase(Long filmId) {
+        log.info("Method started (checkIfFilmIsInDatabase)");
+        String sqlQuery = "SELECT name FROM film WHERE film_id = ?";
+
+        try {
+            jdbcTemplate.queryForObject(sqlQuery, String.class, filmId);
+            return true;
+        } catch (EmptyResultDataAccessException e) {
+            log.info("No film with name={}", filmId);
+            return false;
+        }
+    }
+
+    public void checkForRatingInDatabase(Integer ratingId) {
+        log.info("Method started (checkForRatingInDatabase)");
+        String sqlQuery = "SELECT name FROM rating WHERE rating_id = ?";
+        try {
+            jdbcTemplate.queryForObject(sqlQuery, String.class, ratingId);
+        } catch (EmptyResultDataAccessException e) {
+            log.warn("No rating with id={}", ratingId);
+            throw new NotFoundException("Нет рейтинга с id=" + ratingId);
+        }
+    }
+
+    public void checkForGenreInDatabase(List<Genre> genres) {
+        if (genres != null) {
+            genres.stream().map(Genre::getId).forEach(genreDbStorage::findById);
+        }
+    }
+
+    public void checkForUserInDatabase(Long userId) {
+        log.info("Method started (checkForUserInDatabase)");
+        String sqlQuery = "SELECT name FROM \"user\" WHERE user_id = ?";
+
+        try {
+            jdbcTemplate.queryForObject(sqlQuery, String.class, userId);
+        } catch (EmptyResultDataAccessException e) {
+            log.warn("No user with id={}", userId);
+            throw new NotFoundException("Нет пользователя с id=" + userId);
         }
     }
 }

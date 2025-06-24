@@ -10,7 +10,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.time.LocalDate;
 import java.util.*;
 
-@Component("InMemoryFilmStorage")
+@Component
 @Slf4j
 @Getter
 public class InMemoryFilmStorage implements FilmStorage {
@@ -41,8 +41,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         validation(film);
         film.setId(getNextId());
         log.debug("Adding id (id={})", film.getId());
-//        film.setLikes(new HashSet<>());
-//        log.debug("Creating a friends collection");
         films.put(film.getId(), film);
         log.info("Adding a movie id={}", film.getId());
         return film;
@@ -57,9 +55,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         }
         if (films.containsKey(film.getId())) {
             validation(film);
-//            if (film.getLikes() == null) {
-//                film.setLikes(films.get(film.getId()).getLikes());
-//            }
             log.info("The film id={} has been updated", film.getId());
             films.put(film.getId(), film);
             return film;

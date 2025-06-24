@@ -6,6 +6,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.mappers.GenreRowMapper;
 
@@ -58,8 +59,13 @@ public class GenreDbStorage {
         log.info("Method started (addingGenresToFilm)");
         String sqlQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)";
 
-        log.info("Genre added {}", genreId);
-        jdbcTemplate.update(sqlQuery, filmId, genreId);
+        try {
+            log.info("Genre added {}", genreId);
+            jdbcTemplate.update(sqlQuery, filmId, genreId);
+        } catch (RuntimeException e) {
+            log.warn("The genre is not updated. Reason: {}", e.getMessage());
+            throw new ValidationException("Произошла ошибка обновления жанра. Причина: " + e.getMessage());
+        }
     }
 
     public void removeFilmGenres(Long filmId) {
@@ -69,4 +75,6 @@ public class GenreDbStorage {
         log.info("Genres removed");
         jdbcTemplate.update(sqlQuery, filmId);
     }
+
+
 }
