@@ -45,7 +45,6 @@ public class InMemoryUserStorage implements UserStorage {
         }
         user.setId(getNextId());
         log.debug("Getting a new id id={}", user.getId());
-        user.setFriends(new HashSet<>());
         log.debug("Getting a new id id={}", user.getId());
         users.put(user.getId(), user);
         log.info("Adding a new user id={}", user.getId());

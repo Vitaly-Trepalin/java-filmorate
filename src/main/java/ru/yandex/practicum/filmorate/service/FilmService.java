@@ -2,77 +2,68 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.mappers.FilmRowMapper;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.validation.Validator;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class FilmService {
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private final FilmStorage filmDbStorage;
+    private final UserStorage userDbStorage;
+    private final JdbcTemplate jdbcTemplate;
+    private final FilmRowMapper filmRowMapper;
+    private final Validator validator;
 
-    public void addLike(Long id, Long userId) {
+    public void addLike(Long filmId, Long userId) {
         log.info("Method started (addLike)");
-        Map<Long, Film> films = filmStorage.getFilms();
-        Map<Long, User> users = userStorage.getUsers();
-        if (!films.containsKey(id)) {
-            log.warn("Like not added. No movie id={}", id);
-            throw new NotFoundException("Лайк не поставлен. Нет фильма id=" + id);
-        }
-        if (!users.containsKey(userId)) {
-            log.warn("Like not added. No user id={}", id);
-            throw new NotFoundException("Лайк не поставлен. Нет пользователя id=" + userId);
-        }
-        Set<Long> likes = films.get(id).getLikes();
-        log.info("like added id={}", id);
-        likes.add(userId);
+        String sqlQuery = "INSERT INTO \"like\" VALUES (?, ?)";
+
+        validator.checkForFilmInDatabase(filmId);
+        validator.checkForUserInDatabase(userId);
+
+        jdbcTemplate.update(sqlQuery, filmId, userId);
+        log.info("like added filmId={}", filmId);
     }
 
-    public void removeLike(Long id, Long userId) {
+    public void removeLike(Long filmId, Long userId) {
         log.info("Method started (removeLike)");
-        Map<Long, Film> films = filmStorage.getFilms();
-        Map<Long, User> users = userStorage.getUsers();
-        if (!films.containsKey(id)) {
-            log.warn("Like not deleted. No film id={}", id);
-            throw new NotFoundException("Лайк не удален. Нет фильма id=" + id);
-        }
-        if (!users.containsKey(userId)) {
-            log.warn("Like not deleted. No user id={}", userId);
-            throw new NotFoundException("Лайк не удален. Нет пользователя id=" + userId);
-        }
-        Set<Long> likes = films.get(id).getLikes();
-        if (!likes.contains(userId)) {
-            log.warn("User with id={} did not like", userId);
-            throw new NotFoundException("Пользователь id=" + id + " не ставил лайк");
-        }
-        log.info("like id={} remove", id);
-        likes.remove(userId);
+        String sqlQuery = "DELETE FROM \"like\" WHERE film_id = ? AND user_id = ?";
+
+        validator.checkForFilmInDatabase(filmId);
+        validator.checkForUserInDatabase(userId);
+
+        jdbcTemplate.update(sqlQuery, filmId, userId);
+        log.info("like remove filmId={}", filmId);
     }
 
     public List<Film> showPopularFilms() {
-        Map<Long, Film> films = filmStorage.getFilms();
         log.info("Method started (showPopularFilms)");
-        return films.values().stream()
-                .sorted((x, y) -> y.getLikes().size() - x.getLikes().size())
-                .limit(10)
-                .toList();
+        String sqlQuery = "SELECT f.film_id, name, description, release_date, duration, rating_id\n" +
+                "FROM film AS f\n" +
+                "JOIN \"like\" AS l ON f.film_id = l.film_id\n" +
+                "GROUP BY f.film_id\n" +
+                "ORDER BY COUNT(l.user_id) DESC";
+
+        return jdbcTemplate.query(sqlQuery, filmRowMapper);
     }
 
     public List<Film> showPopularFilms(Long count) {
-        Map<Long, Film> films = filmStorage.getFilms();
-        log.info("Method started (showPopularFilms)");
-        return films.values().stream()
-                .sorted((x, y) -> y.getLikes().size() - x.getLikes().size())
-                .limit(count)
-                .toList();
+        log.info("Method started (showPopularFilms(Long count))");
+        String sqlQuery = "SELECT f.film_id, name, description, release_date, duration, rating_id\n" +
+                "FROM film AS f\n" +
+                "JOIN \"like\" AS l ON f.film_id = l.film_id\n" +
+                "GROUP BY f.film_id\n" +
+                "ORDER BY COUNT(l.user_id) DESC\n" +
+                "LIMIT ?";
+
+        return jdbcTemplate.query(sqlQuery, filmRowMapper, count);
     }
 }
